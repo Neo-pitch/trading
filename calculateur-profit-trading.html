@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculateur de P&L — CFD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e0e11;
+    --bg-grad:#131318;
+    --surface:#17171c;
+    --surface-2:#1d1d24;
+    --line:#2a2a33;
+    --line-soft:#222229;
+    --gold:#c9a227;
+    --gold-dim:#9a7d22;
+    --profit:#3fb68b;
+    --loss:#e0524e;
+    --text:#ecebe4;
+    --muted:#8a877d;
+    --muted-2:#5d5b54;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Space Grotesk',system-ui,sans-serif;
+    background:radial-gradient(120% 90% at 80% -10%, var(--bg-grad) 0%, var(--bg) 55%);
+    color:var(--text);
+    min-height:100vh;
+    line-height:1.4;
+    padding:clamp(16px,4vw,48px);
+    display:flex;
+    justify-content:center;
+  }
+  .shell{width:100%;max-width:1040px}
+
+  /* Header */
+  header{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:28px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .tick{width:10px;height:34px;background:var(--gold);border-radius:2px;box-shadow:0 0 18px -2px var(--gold-dim)}
+  h1{font-size:clamp(20px,3.4vw,28px);font-weight:600;letter-spacing:-.02em}
+  h1 span{color:var(--muted)}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);opacity:.85}
+
+  /* Grid */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media (max-width:780px){.grid{grid-template-columns:1fr}}
+
+  .panel{background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius);padding:clamp(18px,3vw,26px)}
+  .panel h2{font-size:12px;font-family:'JetBrains Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+  .panel h2::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--gold)}
+
+  /* Form */
+  .field{margin-bottom:16px}
+  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:7px;letter-spacing:.01em}
+  .input-wrap{position:relative}
+  input,select{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:9px;
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    padding:12px 14px;
+    transition:border-color .15s,box-shadow .15s;
+    -webkit-appearance:none;appearance:none;
+  }
+  input:focus,select:focus{outline:none;border-color:var(--gold-dim);box-shadow:0 0 0 3px rgba(201,162,39,.12)}
+  input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]{-moz-appearance:textfield}
+  select{cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%238a877d' stroke-width='1.6'/></svg>");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+  .unit{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted-2);pointer-events:none}
+
+  /* Buy/Sell toggle */
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .seg button{
+    background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
+    font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;
+    padding:12px;border-radius:9px;cursor:pointer;transition:all .15s;font-weight:500;
+  }
+  .seg button:hover{border-color:var(--muted-2)}
+  .seg button[data-active="buy"]{background:rgba(63,182,139,.12);border-color:var(--profit);color:var(--profit)}
+  .seg button[data-active="sell"]{background:rgba(224,82,78,.12);border-color:var(--loss);color:var(--loss)}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+  /* Result panel */
+  .result{display:flex;flex-direction:column;justify-content:space-between}
+  .pnl-block{text-align:center;padding:18px 0 24px;border-bottom:1px solid var(--line-soft);margin-bottom:20px}
+  .pnl-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .pnl-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:clamp(38px,8vw,58px);letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums;transition:color .2s}
+  .pnl-value.up{color:var(--profit)}
+  .pnl-value.down{color:var(--loss)}
+  .pnl-value.flat{color:var(--text)}
+  .pnl-pct{font-family:'JetBrains Mono',monospace;font-size:14px;margin-top:12px;color:var(--muted)}
+  .pnl-pct b{font-variant-numeric:tabular-nums}
+
+  /* direction bar */
+  .dirbar{height:6px;border-radius:3px;background:var(--surface-2);margin:18px 0 4px;position:relative;overflow:hidden}
+  .dirbar i{position:absolute;top:0;bottom:0;border-radius:3px;transition:all .3s ease}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:10px;overflow:hidden}
+  .stat{background:var(--surface);padding:14px 16px}
+  .stat .k{font-size:11px;color:var(--muted);letter-spacing:.04em;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+  .stat .v{font-family:'JetBrains Mono',monospace;font-size:16px;font-variant-numeric:tabular-nums}
+  .stat .v small{font-size:11px;color:var(--muted-2)}
+
+  /* leverage note */
+  .note{margin-top:16px;font-size:12px;color:var(--muted);line-height:1.55;border-left:2px solid var(--gold-dim);padding-left:12px}
+  .note b{color:var(--gold)}
+
+  .help{position:relative;cursor:help}
+  .help .tip{position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#000;border:1px solid var(--line);color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:11.5px;line-height:1.45;padding:8px 10px;border-radius:7px;width:190px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:5;letter-spacing:0;text-transform:none}
+  .help:hover .tip{opacity:1}
+  .qmark{width:13px;height:13px;border-radius:50%;border:1px solid var(--muted-2);font-size:9px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted-2)}
+
+  footer{margin-top:22px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);text-align:center;letter-spacing:.04em}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="brand">
+      <div class="tick"></div>
+      <div>
+        <div class="eyebrow">CFD · P&amp;L</div>
+        <h1>Calculateur de profit <span>/ position</span></h1>
+      </div>
+    </div>
+    <div class="eyebrow" id="instr-tag">XAU/USD</div>
+  </header>
+
+  <div class="grid">
+    <!-- INPUTS -->
+    <section class="panel">
+      <h2>Position</h2>
+
+      <div class="field">
+        <label>Sens de l'ordre</label>
+        <div class="seg" id="side">
+          <button type="button" data-side="buy" data-active="buy">Achat (long)</button>
+          <button type="button" data-side="sell">Vente (short)</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="instrument">Instrument / devise</label>
+        <select id="instrument">
+          <option value="100" data-q="EUR" selected>XAU/USD — Or (100 oz/lot)</option>
+          <option value="5000" data-q="EUR">XAG/USD — Argent (5000 oz/lot)</option>
+          <option value="100000" data-q="EUR">EUR/USD (100 000/lot)</option>
+          <option value="100000" data-q="EUR">GBP/USD (100 000/lot)</option>
+          <option value="100000" data-q="EUR">USD/JPY (100 000/lot)</option>
+          <option value="1" data-q="EUR">BTC/USD (1/lot)</option>
+          <option value="1" data-q="EUR">US30 / indice (1/lot)</option>
+          <option value="custom" data-q="EUR">Personnalisé…</option>
+        </select>
+      </div>
+
+      <div class="field" id="custom-field" style="display:none">
+        <label for="contract">Taille de contrat (unités par lot)</label>
+        <div class="input-wrap">
+          <input id="contract" type="number" inputmode="decimal" value="100" step="any">
+          <span class="unit">u/lot</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="volume">Volume</label>
+        <div class="input-wrap">
+          <input id="volume" type="number" inputmode="decimal" value="0.01" step="0.01" min="0">
+          <span class="unit">lots</span>
+        </div>
+      </div>
+
+      <div class="two">
+        <div class="field">
+          <label for="entry">Prix d'entrée</label>
+          <input id="entry" type="number" inputmode="decimal" value="2350.00" step="any" min="0">
+        </div>
+        <div class="field">
+          <label for="exit">Prix de sortie</label>
+          <input id="exit" type="number" inputmode="decimal" value="2358.00" step="any" min="0">
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:0">
+        <label for="leverage">Levier</label>
+        <div class="input-wrap">
+          <input id="leverage" type="number" inputmode="numeric" value="30" step="1" min="1">
+          <span class="unit">: 1</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section class="panel result">
+      <div>
+        <div class="pnl-block">
+          <div class="pnl-label">Profit / Perte</div>
+          <div class="pnl-value flat" id="pnl">0.00</div>
+          <div class="pnl-pct">Rendement sur marge&nbsp; <b id="roi">0.00 %</b></div>
+        </div>
+
+        <div class="dirbar"><i id="bar"></i></div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="k">Variation
+              <span class="help"><span class="qmark">?</span><span class="tip">Mouvement de prix dans le sens de ta position. Positif = en ta faveur.</span></span>
+            </div>
+            <div class="v" id="move">0.00</div>
+          </div>
+          <div class="stat">
+            <div class="k">Valeur du point <small>(1,00)</small></div>
+            <div class="v" id="pip">0.00 <small id="pipq">EUR</small></div>
+          </div>
+          <div class="stat">
+            <div class="k">Valeur notionnelle</div>
+            <div class="v" id="notional">0.00 <small id="notq">EUR</small></div>
+          </div>
+          <div class="stat">
+            <div class="k">Marge requise
+              <span class="help"><span class="qmark">?</span><span class="tip">Capital bloqué = notionnel ÷ levier. C'est le seul rôle du levier.</span></span>
+            </div>
+            <div class="v" id="margin">0.00 <small id="marq">EUR</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <b>Rappel.</b> Le levier ne change pas ton P&amp;L — uniquement la <b>marge</b> mobilisée. Un levier plus élevé libère du capital mais n'augmente d'un euro ni ton gain ni ta perte sur ce mouvement de prix.
+      </div>
+    </section>
+  </div>
+
+  <footer>Profit = (sortie − entrée) × volume × taille de contrat · résultat dans la devise de cotation</footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const els = {
+    side: $('side'), instrument: $('instrument'), customField: $('custom-field'),
+    contract: $('contract'), volume: $('volume'), entry: $('entry'), exit: $('exit'),
+    leverage: $('leverage'), pnl: $('pnl'), roi: $('roi'), move: $('move'),
+    pip: $('pip'), pipq: $('pipq'), notional: $('notional'), notq: $('notq'),
+    margin: $('margin'), marq: $('marq'), bar: $('bar'), tag: $('instr-tag')
+  };
+  let side = 'buy';
+
+  const fmt = (n, d=2) =>
+    isFinite(n) ? n.toLocaleString('fr-FR', {minimumFractionDigits:d, maximumFractionDigits:d}) : '—';
+
+  // Sens de l'ordre
+  els.side.addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    side = b.dataset.side;
+    [...els.side.children].forEach(x => x.removeAttribute('data-active'));
+    b.dataset.active = side;
+    calc();
+  });
+
+  // Instrument
+  els.instrument.addEventListener('change', () => {
+    const opt = els.instrument.selectedOptions[0];
+    const isCustom = els.instrument.value === 'custom';
+    els.customField.style.display = isCustom ? 'block' : 'none';
+    if(!isCustom) els.contract.value = els.instrument.value;
+    els.tag.textContent = opt.textContent.split(' —')[0].split(' (')[0];
+    calc();
+  });
+
+  function contractSize(){
+    return els.instrument.value === 'custom'
+      ? parseFloat(els.contract.value) || 0
+      : parseFloat(els.instrument.value) || 0;
+  }
+  function quoteCcy(){ return els.instrument.selectedOptions[0].dataset.q || 'EUR'; }
+
+  function calc(){
+    const cs = contractSize();
+    const vol = parseFloat(els.volume.value) || 0;
+    const entry = parseFloat(els.entry.value) || 0;
+    const exit = parseFloat(els.exit.value) || 0;
+    const lev = parseFloat(els.leverage.value) || 1;
+    const q = quoteCcy();
+
+    const dir = side === 'buy' ? 1 : -1;
+    const move = (exit - entry) * dir;          // variation en ta faveur
+    const unitVal = cs * vol;                    // valeur d'1.00 de mouvement
+    const pnl = move * unitVal;                  // P&L dans la devise de cotation
+    const notional = entry * cs * vol;           // exposition
+    const margin = lev > 0 ? notional / lev : 0; // capital bloqué
+    const roi = margin > 0 ? (pnl / margin) * 100 : 0;
+
+    // P&L
+    const sign = pnl > 0 ? '+' : '';
+    els.pnl.textContent = sign + fmt(pnl) + ' ' + q;
+    els.pnl.className = 'pnl-value ' + (pnl > 0 ? 'up' : pnl < 0 ? 'down' : 'flat');
+
+    els.roi.textContent = (roi>0?'+':'') + fmt(roi) + ' %';
+    els.roi.style.color = pnl>0 ? 'var(--profit)' : pnl<0 ? 'var(--loss)' : 'var(--muted)';
+
+    els.move.textContent = (move>0?'+':'') + fmt(move, decimals(entry,exit));
+    els.move.style.color = move>0 ? 'var(--profit)' : move<0 ? 'var(--loss)' : 'var(--text)';
+
+    els.pip.firstChild.textContent = fmt(unitVal) + ' ';
+    els.pipq.textContent = q;
+    els.notional.firstChild.textContent = fmt(notional) + ' ';
+    els.notq.textContent = q;
+    els.margin.firstChild.textContent = fmt(margin) + ' ';
+    els.marq.textContent = q;
+
+    // barre directionnelle (capée à ±2% du prix d'entrée pour la lisibilité)
+    const span = entry ? Math.max(Math.abs(move)/(entry*0.02),0) : 0;
+    const w = Math.min(span, 1) * 50;
+    if(move >= 0){ els.bar.style.left='50%'; els.bar.style.width=w+'%'; els.bar.style.background='var(--profit)'; }
+    else { els.bar.style.left=(50-w)+'%'; els.bar.style.width=w+'%'; els.bar.style.background='var(--loss)'; }
+  }
+
+  // nb de décimales pour afficher la variation proprement
+  function decimals(a,b){
+    const s = (a+'').split('.')[1]?.length || 0;
+    const t = (b+'').split('.')[1]?.length || 0;
+    return Math.min(Math.max(s,t,2),5);
+  }
+
+  ['contract','volume','entry','exit','leverage'].forEach(id =>
+    els[id].addEventListener('input', calc));
+
+  calc();
+})();
+</script>
+</body>
+</html>
