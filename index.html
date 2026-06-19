@@ -2,7 +2,12 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gold Tape">
 <title>Gold Tape — Journal XAU/USD (cloud)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -152,11 +157,60 @@
 
   footer{margin-top:30px;text-align:center;font-family:var(--f-mono);font-size:11px;color:var(--muted-2);line-height:1.7}
 
-  @media (max-width:720px){
-    .field.c2,.field.c3,.field.c4{grid-column:span 6}
-    .field.c6,.field.c9{grid-column:span 12}
+  /* ===================== MOBILE ===================== */
+  @media (max-width:760px){
+    .wrap{
+      padding:calc(16px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right))
+              calc(54px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
+    }
+    /* iOS : font-size >=16px sur les champs pour éviter le zoom auto au focus */
+    input,select,textarea{font-size:16px;padding:12px}
+
+    .acct{justify-content:space-between;gap:10px;margin-bottom:14px}
+    .acct .who{max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    header.top{align-items:flex-start;gap:12px;padding-bottom:18px;margin-bottom:20px}
+    .brand h1{font-size:22px}
+    .brand .eyebrow{font-size:10px;letter-spacing:.26em}
     .capital-block{text-align:left}
-    header.top{align-items:flex-start}
+    .capital-block .val{font-size:30px}
+
+    /* barre d'actions en grille nette plutôt qu'un wrap désordonné */
+    .topbar-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:20px}
+    .topbar-actions .mini-set{grid-column:1 / -1;justify-content:space-between}
+    .mini-set input{width:auto;flex:1;max-width:170px}
+    .topbar-actions .btn{margin:0!important;width:100%;padding:12px 8px}
+    #btnReset{grid-column:1 / -1}
+
+    .kpis{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+    .kpi{padding:14px}
+    .kpi .k-lbl{font-size:10px;letter-spacing:.12em}
+    .kpi .k-val{font-size:21px}
+    .kpi.ring-card{gap:11px;padding:12px 13px}
+    .ring{flex-basis:54px}
+    .ring svg{width:54px;height:54px}
+
+    .panel{padding:16px 15px;margin-bottom:16px;border-radius:13px}
+    .panel-head{margin-bottom:14px}
+    .panel-head .hint{display:none}
+
+    .chart-shell{height:215px}
+
+    /* formulaire : 2 colonnes, champs clés en pleine largeur */
+    form.add{gap:11px}
+    .field.c2,.field.c3,.field.c4{grid-column:span 6}
+    .field.c6,.field.c9,.field.c12,.field.f-wide{grid-column:span 12}
+    .seg button{padding:13px 8px;font-size:13px}
+    .form-actions{flex-wrap:wrap;gap:9px}
+    .form-actions .btn{flex:1;min-width:130px}
+    .editing-flag{flex-basis:100%;margin:0 0 2px}
+
+    footer{margin-top:24px}
+  }
+  @media (max-width:380px){
+    .kpis{grid-template-columns:1fr}
+    .capital-block .val{font-size:27px}
+    .topbar-actions{grid-template-columns:1fr}
   }
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.eq-line{stroke-dasharray:none!important;stroke-dashoffset:0!important}}
 </style>
@@ -218,8 +272,8 @@
   <section class="panel">
     <div class="panel-head"><h2 id="formTitle">Nouveau trade</h2><span class="hint">Seuls la date et le P&L sont obligatoires</span></div>
     <form class="add" id="tradeForm" autocomplete="off">
-      <div class="field c3"><label>Date</label><input type="date" id="f_date" required></div>
-      <div class="field c3"><label>Sens</label>
+      <div class="field c3 f-wide"><label>Date</label><input type="date" id="f_date" required></div>
+      <div class="field c3 f-wide"><label>Sens</label>
         <div class="seg" id="sideSeg">
           <button type="button" class="buy active" data-side="buy">BUY</button>
           <button type="button" class="sell" data-side="sell">SELL</button>
@@ -244,7 +298,7 @@
       <div class="field c2"><label>Lot</label><input type="number" id="f_lot" step="0.01" placeholder="0.02"></div>
       <div class="field c2"><label>R:R planifié</label><div class="rr-live" id="rrLive"><span>—</span><span class="muted">R</span></div></div>
 
-      <div class="field c3"><label>P&L réalisé (€)</label><input type="number" id="f_pnl" step="0.01" placeholder="+12.40 / -8.00" required></div>
+      <div class="field c3 f-wide"><label>P&L réalisé (€)</label><input type="number" id="f_pnl" step="0.01" placeholder="+12.40 / -8.00" required></div>
       <div class="field c9"><label>Note</label><textarea id="f_note" placeholder="Contexte, setup (FVG, OB, sweep…), erreur éventuelle…"></textarea></div>
 
       <div class="form-actions">
